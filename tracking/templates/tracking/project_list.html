@@ -1,0 +1,157 @@
+{% extends 'tracking/base.html' %}
+
+{% block title %}Projekte{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Projekte</h1>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+            <i class="bi bi-plus-circle me-2"></i> Neues Projekt
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">Filter</h5>
+        </div>
+        <div class="card-body">
+            <form id="filter-form" method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="client-filter" class="form-label">Kunde</label>
+                    <select class="form-select" id="client-filter" name="client_id" onchange="this.form.submit()">
+                        <option value="">Alle Kunden</option>
+                        {% for client in clients %}
+                        <option value="{{ client.id }}" {% if request.GET.client_id == client.id|stringformat:"i" %}selected{% endif %}>
+                            {{ client.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="status-filter" class="form-label">Status</label>
+                    <select class="form-select" id="status-filter" name="is_active" onchange="this.form.submit()">
+                        <option value="">Alle</option>
+                        <option value="1" {% if request.GET.is_active == '1' %}selected{% endif %}>Aktiv</option>
+                        <option value="0" {% if request.GET.is_active == '0' %}selected{% endif %}>Inaktiv</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="sort-by" class="form-label">Sortieren nach</label>
+                    <select class="form-select" id="sort-by" name="sort" onchange="this.form.submit()">
+                        <option value="name" {% if request.GET.sort == 'name' or not request.GET.sort %}selected{% endif %}>Name</option>
+                        <option value="client" {% if request.GET.sort == 'client' %}selected{% endif %}>Kunde</option>
+                        <option value="hourly_rate" {% if request.GET.sort == 'hourly_rate' %}selected{% endif %}>Stundensatz</option>
+                        <option value="latest" {% if request.GET.sort == 'latest' %}selected{% endif %}>Neueste zuerst</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            {% if projects %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Projekt</th>
+                            <th>Kunde</th>
+                            <th>Stundensatz</th>
+                            <th style="width: 25%;">Fortschritt</th>
+                            <th>Verbleibend</th>
+                            <th>Status</th>
+                            <th class="text-end pe-3">Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in projects %}
+                        <tr>
+                            <td class="ps-3"><a href="{% url 'project_detail' project.id %}" class="text-decoration-none">{{ project.name }}</a></td>
+                            <td><a href="{% url 'client_detail' project.client.id %}" class="text-decoration-none">{{ project.client.name }}</a></td>
+                            <td>{{ project.hourly_rate }} €/h</td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar {% if project.get_percentage_used > 90 %}bg-danger{% elif project.get_percentage_used > 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ project.get_percentage_used }}%;" 
+                                         aria-valuenow="{{ project.get_percentage_used }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small>{{ project.get_used_hours|floatformat:2 }} / {{ project.total_hours }} h ({{ project.get_percentage_used|floatformat:0 }}%)</small>
+                            </td>
+                            <td>{{ project.get_remaining_hours|floatformat:2 }} h</td>
+                            <td>
+                                {% if project.is_active %}
+                                <span class="badge bg-success">Aktiv</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inaktiv</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-3">
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'project_detail' project.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'time_entry' %}?project={{ project.id }}" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-play"></i>
+                                    </a>
+                                    <a href="{% url 'delete_project' project.id %}" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-4 text-center">
+                <p class="text-muted mb-0">Keine Projekte gefunden, die den Filterkriterien entsprechen.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Add Project Modal -->
+    <div class="modal fade" id="addProjectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Neues Projekt</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in field.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary">Speichern</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

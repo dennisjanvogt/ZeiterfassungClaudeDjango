@@ -1,0 +1,242 @@
+<!-- tracking/templates/tracking/time_entry.html -->
+{% extends 'tracking/base.html' %}
+
+{% block title %}Zeiterfassung{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Zeiterfassung</h1>
+        <span class="badge bg-light text-dark">
+            <i class="bi bi-info-circle me-2"></i>Angezeigt werden Ihre Zeiteinträge
+        </span>
+    </div>
+
+    {% if active_timer %}
+    <div class="alert alert-info mt-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4>Laufender Timer für: {{ active_timer.project.client.name }} - {{ active_timer.project.name }}</h4>
+                <p>{{ active_timer.description|default:"Keine Beschreibung" }}</p>
+                <p>Gestartet um: {{ active_timer.start_time|date:"d.m.Y H:i" }}</p>
+                <div id="active-timer" data-start-time="{{ active_timer.start_time|date:'c' }}">
+                    <h3 id="timer">00:00:00</h3>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <form method="post" action="{% url 'stop_timer' active_timer.id %}">
+                    {% csrf_token %}
+                    <button type="submit" id="stop-timer" class="btn btn-danger btn-lg">
+                        <i class="bi bi-stop-circle"></i> Timer stoppen
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Timer starten</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_project" class="form-label">Projekt</label>
+                            <select class="form-select" id="id_project" name="project" required>
+                                <option value="">-- Projekt auswählen --</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}">
+                                    {{ project.client.name }} - {{ project.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Beschreibung</label>
+                            <textarea class="form-control" id="id_description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="id_is_billable" name="is_billable" checked>
+                            <label class="form-check-label" for="id_is_billable">
+                                Abrechenbar
+                            </label>
+                        </div>
+                        <input type="hidden" name="start_timer" value="1">
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            <i class="bi bi-play-circle"></i> Timer starten
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Manueller Eintrag</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_project_manual" class="form-label">Projekt</label>
+                            <select class="form-select" id="id_project_manual" name="project" required>
+                                <option value="">-- Projekt auswählen --</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}">
+                                    {{ project.client.name }} - {{ project.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_description_manual" class="form-label">Beschreibung</label>
+                            <textarea class="form-control" id="id_description_manual" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_start_time" class="form-label">Startzeit</label>
+                                <input type="datetime-local" class="form-control" id="id_start_time" name="start_time" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_end_time" class="form-label">Endzeit</label>
+                                <input type="datetime-local" class="form-control" id="id_end_time" name="end_time" required>
+                            </div>
+                        </div>
+                        <!-- Add factored hours field -->
+                        <div class="mb-3">
+                            <label for="id_factored_hours" class="form-label">Fakturierte Stunden (optional)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="id_factored_hours" name="factored_hours" 
+                                       step="0.25" min="0">
+                                <span class="input-group-text">h</span>
+                            </div>
+                            <small class="form-text text-muted">
+                                Lassen Sie dieses Feld leer, um die gerundete Dauer zu verwenden.
+                            </small>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="id_is_billable_manual" name="is_billable" checked>
+                            <label class="form-check-label" for="id_is_billable_manual">
+                                Abrechenbar
+                            </label>
+                        </div>
+                        <input type="hidden" name="submit_manual" value="1">
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-save"></i> Eintrag speichern
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5>Letzte Einträge</h5>
+        </div>
+        <div class="card-body">
+            {% if recent_entries %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Kunde</th>
+                            <th>Projekt</th>
+                            <th>Beschreibung</th>
+                            <th>Beginn</th>
+                            <th>Ende</th>
+                            <th>Dauer</th>
+                            <th>Fakturiert</th>
+                            <th>Abrechenbar</th>
+                            <th>Betrag</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in recent_entries %}
+                        <tr>
+                            <td>{{ entry.start_time|date:"d.m.Y" }}</td>
+                            <td>{{ entry.project.client.name }}</td>
+                            <td>{{ entry.project.name }}</td>
+                            <td>{{ entry.description|default:"-"|truncatechars:30 }}</td>
+                            <td>{{ entry.start_time|date:"H:i" }}</td>
+                            <td>{% if entry.end_time %}{{ entry.end_time|date:"H:i" }}{% else %}<span class="badge bg-warning">Läuft</span>{% endif %}</td>
+                            <td>{% if entry.end_time %}{{ entry.get_rounded_duration }} h{% else %}-{% endif %}</td>
+                            <td>{% if entry.factored_hours %}{{ entry.factored_hours }} h{% else %}-{% endif %}</td>
+                            <td>
+                                {% if entry.is_billable %}
+                                <i class="bi bi-check-circle text-success"></i>
+                                {% else %}
+                                <i class="bi bi-x-circle text-danger"></i>
+                                {% endif %}
+                            </td>
+                            <td>{% if entry.end_time %}{{ entry.get_billable_amount|floatformat:2 }} €{% else %}-{% endif %}</td>
+                            <td>
+                                {% if entry.end_time %}
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'edit_time_entry' entry.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'delete_time_entry' entry.id %}?next={{ request.path }}" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                                {% else %}
+                                <form method="post" action="{% url 'stop_timer' entry.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-stop-circle"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                Noch keine Zeiteinträge vorhanden.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const activeTimer = document.getElementById('active-timer');
+        if (activeTimer) {
+            const startTime = new Date(activeTimer.dataset.startTime);
+            const timerDisplay = document.getElementById('timer');
+            
+            function updateTimer() {
+                const now = new Date();
+                const diff = now - startTime;
+                
+                const hours = Math.floor(diff / 3600000);
+                const minutes = Math.floor((diff % 3600000) / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+                
+                timerDisplay.textContent = 
+                    (hours < 10 ? '0' + hours : hours) + ':' +
+                    (minutes < 10 ? '0' + minutes : minutes) + ':' +
+                    (seconds < 10 ? '0' + seconds : seconds);
+            }
+            
+            // Update immediately, then every second
+            updateTimer();
+            setInterval(updateTimer, 1000);
+        }
+    });
+</script>
+{% endblock %}

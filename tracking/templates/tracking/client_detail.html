@@ -1,0 +1,253 @@
+{% extends 'tracking/base.html' %}
+
+{% block title %}{{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ client.name }}</h1>
+        <div>
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editClientModal">
+                <i class="bi bi-pencil"></i> Bearbeiten
+            </button>
+            <a href="{% url 'delete_client' client.id %}" class="btn btn-outline-danger ms-2">
+                <i class="bi bi-trash"></i> Löschen
+            </a>
+            <a href="{% url 'client_list' %}" class="btn btn-outline-primary ms-2">
+                <i class="bi bi-arrow-left"></i> Zurück
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Kontaktinformationen</h5>
+                </div>
+                <div class="card-body">
+                    {% if client.contact_person %}
+                    <p><strong>Ansprechpartner:</strong> {{ client.contact_person }}</p>
+                    {% endif %}
+                    
+                    {% if client.email %}
+                    <p><strong>E-Mail:</strong> <a href="mailto:{{ client.email }}">{{ client.email }}</a></p>
+                    {% endif %}
+                    
+                    {% if client.phone %}
+                    <p><strong>Telefon:</strong> <a href="tel:{{ client.phone }}">{{ client.phone }}</a></p>
+                    {% endif %}
+                    
+                    {% if client.address %}
+                    <p><strong>Adresse:</strong><br>{{ client.address|linebreaks }}</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-white text-muted py-3">
+                    Erstellt am {{ client.created_at|date:"d.m.Y" }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0">Projekte</h5>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                        <i class="bi bi-plus-circle"></i> Neues Projekt
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    {% if projects %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Name</th>
+                                    <th>Stundensatz</th>
+                                    <th>Gesamtstunden</th>
+                                    <th>Fortschritt</th>
+                                    <th>Status</th>
+                                    <th class="text-end pe-3">Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in projects %}
+                                <tr>
+                                    <td class="ps-3"><a href="{% url 'project_detail' project.id %}" class="text-decoration-none">{{ project.name }}</a></td>
+                                    <td>{{ project.hourly_rate }} €/h</td>
+                                    <td>{{ project.get_used_hours|floatformat:2 }} / {{ project.total_hours }} h</td>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar {% if project.get_percentage_used > 90 %}bg-danger{% elif project.get_percentage_used > 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ project.get_percentage_used }}%;" 
+                                                 aria-valuenow="{{ project.get_percentage_used }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <small>{{ project.get_percentage_used|floatformat:0 }}%</small>
+                                    </td>
+                                    <td>
+                                        {% if project.is_active %}
+                                        <span class="badge bg-success">Aktiv</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inaktiv</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'project_detail' project.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'time_entry' %}?project={{ project.id }}" class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-play"></i>
+                                            </a>
+                                            <a href="{% url 'delete_project' project.id %}" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center">
+                        <p class="text-muted mb-0">Noch keine Projekte für diesen Kunden angelegt.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Monatliche Übersicht</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 mb-3">
+                                <div class="card-body text-center p-4">
+                                    <div class="rounded-circle bg-info bg-opacity-10 p-3 mb-3 mx-auto" style="width: 70px; height: 70px;">
+                                        <i class="bi bi-clock-history text-info" style="font-size: 1.75rem;"></i>
+                                    </div>
+                                    <h3 class="fs-1 fw-light mb-0">{{ month_hours|floatformat:2 }}</h3>
+                                    <p class="text-muted mb-0">Stunden im aktuellen Monat</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0 mb-3">
+                                <div class="card-body text-center p-4">
+                                    <div class="rounded-circle bg-success bg-opacity-10 p-3 mb-3 mx-auto" style="width: 70px; height: 70px;">
+                                        <i class="bi bi-currency-euro text-success" style="font-size: 1.75rem;"></i>
+                                    </div>
+                                    <h3 class="fs-1 fw-light mb-0">{{ month_revenue|floatformat:2 }}</h3>
+                                    <p class="text-muted mb-0">Umsatz im aktuellen Monat (€)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white py-3">
+                    <a href="{% url 'analytics' %}?client_id={{ client.id }}" class="btn btn-outline-primary">
+                        <i class="bi bi-graph-up me-2"></i> Detaillierte Analyse anzeigen
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Client Modal -->
+    <div class="modal fade" id="editClientModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Kunde bearbeiten</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in field.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary">Speichern</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Project Modal -->
+    <div class="modal fade" id="addProjectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Neues Projekt</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" action="{% url 'project_list' %}">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        <input type="hidden" name="client" value="{{ client.id }}">
+                        
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label">Projektname</label>
+                            <input type="text" class="form-control" id="id_name" name="name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Beschreibung</label>
+                            <textarea class="form-control" id="id_description" name="description" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_hourly_rate" class="form-label">Stundensatz (€)</label>
+                            <input type="number" class="form-control" id="id_hourly_rate" name="hourly_rate" step="0.01" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_total_hours" class="form-label">Gesamtprojektdauer (Stunden)</label>
+                            <input type="number" class="form-control" id="id_total_hours" name="total_hours" step="0.01" required>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="id_is_active" name="is_active" checked>
+                            <label class="form-check-label" for="id_is_active">
+                                Projekt ist aktiv
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary">Speichern</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

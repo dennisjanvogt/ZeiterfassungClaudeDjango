@@ -1,0 +1,128 @@
+{% extends 'tracking/base.html' %}
+
+{% block title %}Profil bearbeiten{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Mein Profil</h1>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left me-2"></i> Zurück zum Dashboard
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Persönliche Daten</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Benutzername</label>
+                            <input type="text" class="form-control" id="username" value="{{ user.username }}" disabled>
+                            <div class="form-text">Der Benutzername kann nicht geändert werden.</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">Vorname</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Nachname</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-Mail-Adresse</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i> Änderungen speichern
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Konto-Informationen</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        <strong>Konto erstellt:</strong> {{ user.date_joined|date:"d.m.Y H:i" }}
+                    </p>
+                    <p>
+                        <strong>Letzte Anmeldung:</strong> {{ user.last_login|date:"d.m.Y H:i" }}
+                    </p>
+                    <p>
+                        <strong>Status:</strong> 
+                        {% if profile.is_approved %}
+                        <span class="badge bg-success">Freigegeben</span>
+                        {% else %}
+                        <span class="badge bg-warning">Warte auf Freigabe</span>
+                        {% endif %}
+                    </p>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'change_password' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-key me-2"></i> Passwort ändern
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Zeiterfassungs-Statistik</h5>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 mb-3 mx-auto" style="width: 80px; height: 80px;">
+                        <i class="bi bi-clock-history text-primary" style="font-size: 2.5rem;"></i>
+                    </div>
+                    
+                    <h3 class="display-4 fw-light mb-0">
+                        {{ user.time_entries.count }}
+                    </h3>
+                    <p class="text-muted mb-4">Erfasste Zeiteinträge</p>
+                    
+                    <div class="d-grid">
+                        <a href="{% url 'time_entry' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list-ul me-2"></i> Meine Zeiteinträge
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Schnellzugriff</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'time_entry' %}" class="btn btn-success mb-2">
+                            <i class="bi bi-play-circle me-2"></i> Zeit erfassen
+                        </a>
+                        <a href="{% url 'analytics' %}" class="btn btn-primary mb-2">
+                            <i class="bi bi-graph-up me-2"></i> Meine Analysen
+                        </a>
+                        <a href="{% url 'project_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-folder me-2"></i> Projekte anzeigen
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

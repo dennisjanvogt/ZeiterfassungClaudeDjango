@@ -1,0 +1,64 @@
+<!-- tracking/templates/tracking/confirm_delete.html -->
+{% extends 'tracking/base.html' %}
+
+{% block title %}Löschen bestätigen{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Löschen bestätigen</h5>
+                </div>
+                <div class="card-body">
+                    {% if dependents_check and dependents_count > 0 %}
+                    <div class="alert alert-danger mb-4">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            Löschen nicht möglich
+                        </h5>
+                        <p>
+                            {{ object_name }} kann nicht gelöscht werden, da noch {{ dependents_count }} {{ dependents_type }} 
+                            damit verbunden sind. Bitte löschen Sie zuerst alle abhängigen Einträge.
+                        </p>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ back_url }}" class="btn btn-primary">
+                            <i class="bi bi-arrow-left me-2"></i> Zurück
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-4">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            Achtung
+                        </h5>
+                        <p>
+                            Sie sind dabei, <strong>{{ object_name }}</strong> zu löschen. 
+                            Diese Aktion kann nicht rückgängig gemacht werden.
+                        </p>
+                        <p class="mb-0">
+                            Sind Sie sicher, dass Sie fortfahren möchten?
+                        </p>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ back_url }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="bi bi-x-circle me-2"></i> Abbrechen
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i> Löschen
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

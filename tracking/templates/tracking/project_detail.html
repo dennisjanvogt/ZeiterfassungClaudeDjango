@@ -1,0 +1,223 @@
+{% extends 'tracking/base.html' %}
+
+{% block title %}{{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ project.name }}</h1>
+        <div>
+            <a href="{% url 'time_entry' %}?project={{ project.id }}" class="btn btn-success">
+                <i class="bi bi-play-circle"></i> Zeit erfassen
+            </a>
+            <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#editProjectModal">
+                <i class="bi bi-pencil"></i> Bearbeiten
+            </button>
+            <a href="{% url 'delete_project' project.id %}" class="btn btn-outline-danger ms-2">
+                <i class="bi bi-trash"></i> Löschen
+            </a>
+            <a href="{% url 'project_list' %}" class="btn btn-outline-primary ms-2">
+                <i class="bi bi-arrow-left"></i> Zurück
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Projektinformationen</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Kunde:</strong> <a href="{% url 'client_detail' project.client.id %}" class="text-decoration-none">{{ project.client.name }}</a></p>
+                    
+                    <p><strong>Stundensatz:</strong> {{ project.hourly_rate }} €/h</p>
+                    
+                    <p><strong>Gesamtprojektdauer:</strong> {{ project.total_hours }} Stunden</p>
+                    
+                    <p><strong>Status:</strong> 
+                        {% if project.is_active %}
+                        <span class="badge bg-success">Aktiv</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inaktiv</span>
+                        {% endif %}
+                    </p>
+                    
+                    {% if project.description %}
+                    <p><strong>Beschreibung:</strong><br>{{ project.description|linebreaks }}</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-white text-muted py-3">
+                    Erstellt am {{ project.created_at|date:"d.m.Y" }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Projektfortschritt</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0">
+                                <div class="card-body text-center p-4">
+                                    <h2 class="display-4 fw-light mb-0">{{ used_hours|floatformat:2 }}</h2>
+                                    <p class="text-muted mb-0">Verwendete Stunden</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0">
+                                <div class="card-body text-center p-4">
+                                    <h2 class="display-4 fw-light mb-0">{{ remaining_hours|floatformat:2 }}</h2>
+                                    <p class="text-muted mb-0">Verbleibende Stunden</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress mb-3" style="height: 16px;">
+                        <div class="progress-bar {% if percentage_used > 90 %}bg-danger{% elif percentage_used > 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ percentage_used }}%;" 
+                             aria-valuenow="{{ percentage_used }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                    
+                    <p class="text-center">
+                        {{ used_hours|floatformat:2 }} von {{ project.total_hours }} Stunden verbraucht ({{ percentage_used|floatformat:1 }}%)
+                    </p>
+                    
+                    <div class="alert {% if percentage_used > 90 %}alert-danger{% elif percentage_used > 75 %}alert-warning{% else %}alert-success{% endif %} mt-3">
+                        {% if percentage_used > 90 %}
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                            <div>
+                                <strong>Achtung!</strong> Das Projektkontingent ist fast aufgebraucht. Nur noch {{ remaining_hours|floatformat:2 }} Stunden verfügbar.
+                            </div>
+                        </div>
+                        {% elif percentage_used > 75 %}
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-exclamation-circle fs-4 me-3"></i>
+                            <div>
+                                <strong>Hinweis:</strong> Das Projekt hat bereits {{ percentage_used|floatformat:1 }}% des Stundenkontingents verbraucht.
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle fs-4 me-3"></i>
+                            <div>
+                                <strong>Info:</strong> Das Projekt ist auf einem guten Weg. Noch {{ remaining_hours|floatformat:2 }} Stunden verfügbar.
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0">Zeiteinträge</h5>
+            <a href="{% url 'time_entry' %}?project={{ project.id }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle"></i> Neuer Zeiteintrag
+            </a>
+        </div>
+        <div class="card-body p-0">
+            {% if time_entries %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Datum</th>
+                            <th>Beschreibung</th>
+                            <th>Beginn</th>
+                            <th>Ende</th>
+                            <th>Dauer</th>
+                            <th>Abrechenbar</th>
+                            <th class="text-end pe-3">Betrag</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in time_entries %}
+                        <tr>
+                            <td class="ps-3">{{ entry.start_time|date:"d.m.Y" }}</td>
+                            <td>{{ entry.description|default:"-" }}</td>
+                            <td>{{ entry.start_time|date:"H:i" }}</td>
+                            <td>{% if entry.end_time %}{{ entry.end_time|date:"H:i" }}{% else %}<span class="badge bg-warning">Läuft</span>{% endif %}</td>
+                            <td>{% if entry.end_time %}{{ entry.get_rounded_duration }} h{% else %}-{% endif %}</td>
+                            <td>
+                                {% if entry.is_billable %}
+                                <i class="bi bi-check-circle text-success"></i>
+                                {% else %}
+                                <i class="bi bi-x-circle text-danger"></i>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-3">{% if entry.end_time %}{{ entry.get_billable_amount|floatformat:2 }} €{% else %}-{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-4 text-center">
+                <p class="text-muted mb-0">Noch keine Zeiteinträge für dieses Projekt vorhanden.</p>
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-footer bg-white py-3">
+            <div class="d-flex justify-content-start">
+                <a href="{% url 'export_report' %}?project_id={{ project.id }}&format=xlsx" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-file-earmark-excel"></i> Excel-Export
+                </a>
+                <a href="{% url 'export_report' %}?project_id={{ project.id }}&format=csv" class="btn btn-outline-secondary">
+                    <i class="bi bi-file-earmark-text"></i> CSV-Export
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Project Modal -->
+    <div class="modal fade" id="editProjectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Projekt bearbeiten</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in field.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary">Speichern</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

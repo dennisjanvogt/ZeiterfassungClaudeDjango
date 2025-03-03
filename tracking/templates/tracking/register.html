@@ -1,0 +1,123 @@
+{% extends 'tracking/base.html' %}
+
+{% block title %}Registrieren{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-logo">
+        <i class="bi bi-clock-history"></i>
+        <h2>Zeiterfassung</h2>
+        <p class="text-muted">Beratung & Projektmanagement</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title mb-4 text-center">Registrierung</h5>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <label for="{{ form.username.id_for_label }}" class="form-label">Benutzername</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.username.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.email.id_for_label }}" class="form-label">E-Mail</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.email.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.first_name.id_for_label }}" class="form-label">Vorname</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.first_name.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.last_name.id_for_label }}" class="form-label">Nachname</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.last_name.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.password1.id_for_label }}" class="form-label">Passwort</label>
+                    {{ form.password1 }}
+                    {% if form.password1.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.password1.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="form-text">{{ form.password1.help_text }}</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.password2.id_for_label }}" class="form-label">Passwort bestätigen</label>
+                    {{ form.password2 }}
+                    {% if form.password2.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.password2.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.codewort.id_for_label }}" class="form-label">Codewort</label>
+                    {{ form.codewort }}
+                    {% if form.codewort.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.codewort.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 mt-3">Registrieren</button>
+            </form>
+        </div>
+        <div class="card-footer text-center">
+            <p class="mb-0">Bereits registriert? <a href="{% url 'login' %}">Hier anmelden</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

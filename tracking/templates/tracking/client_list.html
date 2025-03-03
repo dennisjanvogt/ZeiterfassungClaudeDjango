@@ -1,0 +1,137 @@
+<!-- client_list.html -->
+{% extends 'tracking/base.html' %}
+
+{% block title %}Kunden{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Kunden</h1>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addClientModal">
+            <i class="bi bi-plus-circle"></i> Neuer Kunde
+        </button>
+    </div>
+
+    <div class="row">
+        {% for client in clients %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ client.name }}</h5>
+                    {% if client.contact_person %}
+                    <p class="card-text"><i class="bi bi-person"></i> {{ client.contact_person }}</p>
+                    {% endif %}
+                    {% if client.email %}
+                    <p class="card-text"><i class="bi bi-envelope"></i> {{ client.email }}</p>
+                    {% endif %}
+                    {% if client.phone %}
+                    <p class="card-text"><i class="bi bi-telephone"></i> {{ client.phone }}</p>
+                    {% endif %}
+                    <p class="card-text">
+                        <small class="text-muted">
+                            {{ client.projects.count }} Projekte | 
+                            Erstellt: {{ client.created_at|date:"d.m.Y" }}
+                        </small>
+                    </p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'client_detail' client.id %}" class="btn btn-outline-primary">Details</a>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editClientModal{{ client.id }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <a href="{% url 'delete_client' client.id %}" class="btn btn-outline-danger">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Client Modal -->
+        <div class="modal fade" id="editClientModal{{ client.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Kunde bearbeiten</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="post" action="{% url 'client_detail' client.id %}">
+                        <div class="modal-body">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="id_name" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="id_name" name="name" value="{{ client.name }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_contact_person" class="form-label">Ansprechpartner</label>
+                                <input type="text" class="form-control" id="id_contact_person" name="contact_person" value="{{ client.contact_person|default:'' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_email" class="form-label">E-Mail</label>
+                                <input type="email" class="form-control" id="id_email" name="email" value="{{ client.email|default:'' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_phone" class="form-label">Telefon</label>
+                                <input type="text" class="form-control" id="id_phone" name="phone" value="{{ client.phone|default:'' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_address" class="form-label">Adresse</label>
+                                <textarea class="form-control" id="id_address" name="address" rows="3">{{ client.address|default:'' }}</textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                            <button type="submit" class="btn btn-primary">Speichern</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <p>Noch keine Kunden vorhanden. Erstelle deinen ersten Kunden über den Button "Neuer Kunde".</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Add Client Modal -->
+    <div class="modal fade" id="addClientModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Neuer Kunde</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in field.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="submit" class="btn btn-primary">Speichern</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

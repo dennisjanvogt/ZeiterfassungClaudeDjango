@@ -1,0 +1,96 @@
+{% extends 'tracking/base.html' %}
+
+{% block title %}Zeiteintrag bearbeiten{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Zeiteintrag bearbeiten</h1>
+        <a href="{% url 'time_entry' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Zurück zur Zeiterfassung
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>Eintrag vom {{ entry.start_time|date:"d.m.Y" }} bearbeiten</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="project" class="form-label">Projekt</label>
+                    <select name="project" id="project" class="form-select" required>
+                        {% for project in projects %}
+                        <option value="{{ project.id }}" {% if project.id == entry.project.id %}selected{% endif %}>
+                            {{ project.client.name }} - {{ project.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">
+                        Bitte wählen Sie ein Projekt aus.
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">Beschreibung</label>
+                    <textarea name="description" id="description" class="form-control" rows="3">{{ entry.description }}</textarea>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="start_time" class="form-label">Startzeit</label>
+                        <input type="datetime-local" class="form-control" id="start_time" name="start_time" 
+                               value="{{ start_time_local }}" required>
+                        <div class="invalid-feedback">
+                            Bitte geben Sie die Startzeit ein.
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="end_time" class="form-label">Endzeit</label>
+                        <input type="datetime-local" class="form-control" id="end_time" name="end_time" 
+                               value="{{ end_time_local }}" required>
+                        <div class="invalid-feedback">
+                            Bitte geben Sie die Endzeit ein.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Add factored hours field -->
+                <div class="mb-3">
+                    <label for="factored_hours" class="form-label">Fakturierte Stunden (optional)</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="factored_hours" name="factored_hours" 
+                               step="0.25" min="0" 
+                               value="{{ entry.factored_hours|stringformat:'.2f'|default:'' }}">
+                        <span class="input-group-text">h</span>
+                    </div>
+                    <small class="form-text text-muted">
+                        Lassen Sie dieses Feld leer, um die gerundete Dauer ({{ entry.get_rounded_duration }} h) zu verwenden.
+                    </small>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="is_billable" name="is_billable" 
+                           {% if entry.is_billable %}checked{% endif %}>
+                    <label class="form-check-label" for="is_billable">Abrechenbar</label>
+                </div>
+                
+                <div class="mb-3">
+                    <p>Aktueller Betrag: <strong>{{ entry.get_billable_amount|floatformat:2 }} €</strong></p>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'time_entry' %}" class="btn btn-outline-secondary">
+                        Abbrechen
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Änderungen speichern
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

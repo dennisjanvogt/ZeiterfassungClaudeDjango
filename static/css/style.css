@@ -1,0 +1,391 @@
+/* static/css/style.css */
+
+/* Grundlegende Variablen */
+:root {
+    --apple-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --primary-color: #0071e3;
+    --success-color: #34c759;
+    --warning-color: #ff9500;
+    --danger-color: #ff3b30;
+    --info-color: #5ac8fa;
+    --dark-color: #1d1d1f;
+    --light-color: #f5f5f7;
+    --gray-color: #86868b;
+    --border-color: #d2d2d7;
+    --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+}
+
+/* Basis-Styling */
+body {
+    font-family: var(--apple-font);
+    background-color: #f5f5f7;
+    color: var(--dark-color);
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+    line-height: 1.5;
+}
+
+.container-fluid {
+    flex: 1;
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 500;
+}
+
+/* Karten-Styling */
+.card {
+    border: none;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.card-header {
+    background-color: white;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.25rem;
+    font-weight: 500;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.card-footer {
+    background-color: white;
+    border-top: 1px solid var(--border-color);
+    padding: 1rem 1.25rem;
+}
+
+/* Tabellen-Styling */
+.table {
+    color: var(--dark-color);
+    margin-bottom: 0;
+}
+
+.table th {
+    font-weight: 500;
+    color: var(--gray-color);
+    border-top: none;
+}
+
+.table td, .table th {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    border-color: var(--border-color);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Formulare */
+.form-control, .form-select {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+}
+
+.form-label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: var(--gray-color);
+}
+
+/* Buttons */
+.btn {
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background-color: #0062cc;
+    border-color: #0062cc;
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.btn-success:hover, .btn-success:focus {
+    background-color: #2cb04c;
+    border-color: #2cb04c;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Navigation */
+.navbar {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.navbar-dark {
+    background-color: var(--dark-color) !important;
+}
+
+.navbar-brand {
+    font-weight: 500;
+}
+
+.nav-link {
+    color: var(--dark-color) !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem !important;
+}
+
+.navbar-dark .nav-link {
+    color: white !important;
+}
+
+.nav-link.active {
+    color: var(--primary-color) !important;
+}
+
+.dropdown-menu {
+    border: none;
+    box-shadow: var(--shadow-md);
+    border-radius: var(--radius-sm);
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+}
+
+/* WICHTIG: Fortschrittsbalken-Styling */
+.progress {
+    height: 8px;
+    background-color: #e8e8ed;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+}
+
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+.progress-bar.bg-success {
+    background-color: var(--success-color) !important;
+}
+
+.progress-bar.bg-warning {
+    background-color: var(--warning-color) !important;
+}
+
+.progress-bar.bg-danger {
+    background-color: var(--danger-color) !important;
+}
+
+.progress-bar.bg-info {
+    background-color: var(--info-color) !important;
+}
+
+/* Alerts */
+.alert {
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+}
+
+.alert-info {
+    background-color: rgba(90, 200, 250, 0.1);
+    color: #0071ab;
+}
+
+.alert-success {
+    background-color: rgba(52, 199, 89, 0.1);
+    color: #1d8348;
+}
+
+.alert-warning {
+    background-color: rgba(255, 149, 0, 0.1);
+    color: #ce7a00;
+}
+
+.alert-danger {
+    background-color: rgba(255, 59, 48, 0.1);
+    color: #cf2a1f;
+}
+
+/* Footer */
+.footer {
+    background-color: white;
+    border-top: 1px solid var(--border-color);
+    padding: 1rem 0;
+}
+
+/* KPI-Karten - moderne Version */
+.kpi-card {
+    padding: 1.5rem;
+    height: 100%;
+    transition: transform 0.2s;
+}
+
+.kpi-card:hover {
+    transform: translateY(-3px);
+}
+
+.kpi-card .card-title {
+    font-size: 2rem;
+    font-weight: 300;
+    margin-bottom: 0.25rem;
+}
+
+.card-subtitle {
+    color: var(--gray-color);
+    font-size: 0.95rem;
+}
+
+/* Timer */
+#timer {
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 2.5rem;
+    font-weight: 300;
+    margin: 1rem 0;
+    color: var(--dark-color);
+}
+
+/* Login/Register */
+.login-container {
+    max-width: 400px;
+    margin: 4rem auto;
+}
+
+.login-logo i {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+/* Badge */
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+    border-radius: var(--radius-sm);
+}
+
+/* Zusätzliche Hilfeklassen */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Icons */
+.bi {
+    vertical-align: -0.125em;
+}
+
+/* Kreise für Icons */
+.rounded-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+}
+
+/* Z-index Reset für Bootstrap 5 */
+
+/* Hierarchie von z-index Werten zurücksetzen */
+:root {
+    --bs-zindex-dropdown: 9999 !important;
+    --bs-zindex-sticky: 1020 !important;
+    --bs-zindex-fixed: 1030 !important;
+    --bs-zindex-modal-backdrop: 1040 !important;
+    --bs-zindex-offcanvas: 1045 !important;
+    --bs-zindex-modal: 1050 !important;
+    --bs-zindex-popover: 1070 !important;
+    --bs-zindex-tooltip: 1080 !important;
+    --bs-zindex-toast: 1090 !important;
+  }
+  
+  /* Grundlegende Stapelung für alle Elemente definieren */
+  body * { 
+    z-index: auto; 
+  }
+  
+  /* Navbar erhält einen niedrigeren z-index */
+  .navbar {
+    z-index: 1000 !important;
+  }
+  
+  /* Dropdown-Menüs sehr hoch stapeln */
+  .dropdown-menu {
+    z-index: 9999 !important;
+    position: absolute !important;
+  }
+  
+  /* Alle Positionierungskontexte erhalten overflow:visible */
+  [class^="container"],
+  [class*=" container"],
+  .row,
+  .col,
+  .col-1, .col-2, .col-3, .col-4, .col-5, .col-6, 
+  .col-7, .col-8, .col-9, .col-10, .col-11, .col-12,
+  .col-sm, .col-md, .col-lg, .col-xl, .col-xxl,
+  .card,
+  .card-body,
+  .card-header,
+  .card-footer {
+    overflow: visible !important;
+  }
+  
+  /* Stapelung für Card-Elemente */
+  .card {
+    z-index: 1 !important;
+  }
+  
+  /* Benutzer-Dropdown-Menü-Fix direkt mit ID oder spezifischer Klasse */
+  #userDropdown + .dropdown-menu,
+  .navbar-nav .dropdown-menu {
+    z-index: 10000 !important; /* Höchster Wert */
+    position: absolute !important;
+  }
+  
+  /* Stelle sicher, dass KPI-Karten nicht überlagern */
+  .kpi-card {
+    z-index: 1 !important;
+  }

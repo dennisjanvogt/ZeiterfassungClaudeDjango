@@ -1,0 +1,287 @@
+{% extends 'tracking/base.html' %}
+
+{% block title %}Analyse{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Analyse & Auswertung</h1>
+        <div>
+            <span class="badge bg-light text-dark me-3">
+                {% if selected_user_id %}
+                <i class="bi bi-filter-circle me-2"></i>Gefiltert nach Mitarbeiter
+                {% else %}
+                <i class="bi bi-people me-2"></i>Alle Mitarbeiter
+                {% endif %}
+            </span>
+            <a href="{% url 'export_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&client_id={{ selected_client_id }}&user_id={{ selected_user_id }}&format=xlsx" class="btn btn-outline-primary me-2">
+                <i class="bi bi-file-earmark-excel"></i> Excel-Export
+            </a>
+            <a href="{% url 'export_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&client_id={{ selected_client_id }}&user_id={{ selected_user_id }}&format=csv" class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-text"></i> CSV-Export
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">Zeitraum und Filter</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="start-date" class="form-label">Von</label>
+                    <input type="date" class="form-control" id="start-date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="end-date" class="form-label">Bis</label>
+                    <input type="date" class="form-control" id="end-date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="client-filter" class="form-label">Kunde</label>
+                    <select class="form-select" id="client-filter" name="client_id">
+                        <option value="">Alle Kunden</option>
+                        {% for client in clients %}
+                        <option value="{{ client.id }}" {% if selected_client_id == client.id|stringformat:"i" %}selected{% endif %}>
+                            {{ client.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="user-filter" class="form-label">Mitarbeiter</label>
+                    <select class="form-select" id="user-filter" name="user_id">
+                        <option value="">Alle Mitarbeiter</option>
+                        {% for user_item in users %}
+                        <option value="{{ user_item.id }}" {% if selected_user_id == user_item.id|stringformat:"i" %}selected{% endif %}>
+                            {{ user_item.get_full_name|default:user_item.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel me-2"></i> Filtern
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 mb-3">
+                        <i class="bi bi-clock-history text-primary" style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="fs-1 fw-light mb-0">{{ total_hours|floatformat:1 }}</h3>
+                    <p class="text-muted mb-0">Gesamtstunden im Zeitraum</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3 mb-3">
+                        <i class="bi bi-currency-euro text-success" style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="fs-1 fw-light mb-0">{{ total_revenue|floatformat:0 }}</h3>
+                    <p class="text-muted mb-0">Gesamtumsatz im Zeitraum (€)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4 mt-4 border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0">Auswertung nach Kunden</h5>
+            <span class="badge bg-light text-dark">{{ client_data|length }} Kunden</span>
+        </div>
+        <div class="card-body p-0">
+            {% if client_data %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Kunde</th>
+                            <th>Stunden</th>
+                            <th>Umsatz</th>
+                            <th>Projekte</th>
+                            <th style="width: 30%;">Anteil am Gesamtumsatz</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in client_data %}
+                        <tr>
+                            <td class="ps-3">{{ data.client.name }}</td>
+                            <td>{{ data.hours|floatformat:2 }} h</td>
+                            <td>{{ data.revenue|floatformat:2 }} €</td>
+                            <td>{{ data.projects|length }}</td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar bg-info" 
+                                         role="progressbar" 
+                                         style="width: {% widthratio data.revenue total_revenue 100 %}%;" 
+                                         aria-valuenow="{% widthratio data.revenue total_revenue 100 %}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small>{% widthratio data.revenue total_revenue 100 %}% des Gesamtumsatzes</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-4 text-center">
+                <p class="text-muted">Keine Daten im ausgewählten Zeitraum vorhanden.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% for data in client_data %}
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0">
+                <i class="bi bi-briefcase me-2"></i>
+                Projekte von {{ data.client.name }}
+            </h5>
+            <div>
+                <span class="badge bg-light text-dark me-2">{{ data.projects|length }} Projekte</span>
+                <span class="badge bg-primary">{{ data.hours|floatformat:1 }} h</span>
+                <span class="badge bg-success ms-1">{{ data.revenue|floatformat:0 }} €</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Projekt</th>
+                            <th>Stunden</th>
+                            <th>Stundensatz</th>
+                            <th>Umsatz</th>
+                            <th style="width: 30%;">Projektfortschritt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project_id, project_data in data.projects.items %}
+                        <tr>
+                            <td class="ps-3">
+                                <a href="{% url 'project_detail' project_data.project.id %}" class="text-decoration-none">
+                                    {{ project_data.project.name }}
+                                </a>
+                            </td>
+                            <td>{{ project_data.hours|floatformat:2 }} h</td>
+                            <td>{{ project_data.project.hourly_rate }} €/h</td>
+                            <td>{{ project_data.revenue|floatformat:2 }} €</td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar {% if project_data.project.get_percentage_used > 90 %}bg-danger{% elif project_data.project.get_percentage_used > 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ project_data.project.get_percentage_used }}%;" 
+                                         aria-valuenow="{{ project_data.project.get_percentage_used }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small>{{ project_data.project.get_used_hours|floatformat:2 }} / {{ project_data.project.total_hours }} h gesamt 
+                                ({{ project_data.project.get_percentage_used|floatformat:0 }}%)</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Detaillierte Zeitstatistiken -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">Zeitverteilung im ausgewählten Zeitraum</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card bg-light mb-3 border-0">
+                        <div class="card-body text-center p-4">
+                            <h6 class="card-subtitle mb-3 text-muted">Durchschnittliche Stunden pro Tag</h6>
+                            <p class="card-text display-5 fw-light mb-0">
+                                {% if total_hours > 0 %}
+                                {{ avg_hours_per_day|default:0|floatformat:2 }} h
+                                {% else %}
+                                0 h
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-light mb-3 border-0">
+                        <div class="card-body text-center p-4">
+                            <h6 class="card-subtitle mb-3 text-muted">Durchschnittlicher Umsatz pro Stunde</h6>
+                            <p class="card-text display-5 fw-light mb-0">
+                                {% if total_hours > 0 %}
+                                {{ avg_revenue_per_hour|default:0|floatformat:2 }} €/h
+                                {% else %}
+                                0 €/h
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export-Optionen Footer -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">Exportieren</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">Exportiere die gefilterten Daten für die weitere Verwendung in anderen Anwendungen.</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <a href="{% url 'export_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&client_id={{ selected_client_id }}&format=xlsx" class="btn btn-outline-primary w-100 mb-3">
+                        <i class="bi bi-file-earmark-excel me-2"></i> Excel-Export (.xlsx)
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a href="{% url 'export_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&client_id={{ selected_client_id }}&format=csv" class="btn btn-outline-secondary w-100 mb-3">
+                        <i class="bi bi-file-earmark-text me-2"></i> CSV-Export (.csv)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Datepicker Defaults
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wenn keine Daten vorhanden sind, aktuelles Monat vorauswählen
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        
+        if (!startDateInput.value) {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            startDateInput.value = firstDay.toISOString().split('T')[0];
+        }
+        
+        if (!endDateInput.value) {
+            const now = new Date();
+            endDateInput.value = now.toISOString().split('T')[0];
+        }
+    });
+</script>
+{% endblock %}
