@@ -7,8 +7,50 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from decimal import Decimal
 
+import os
+from django.db import models
+from django.utils import timezone
+
+def organization_logo_path(instance, filename):
+    """
+    Generate a unique filename for uploaded organization logos
+    """
+    # Get the file extension
+    ext = filename.split('.')[-1]
+    # Create a timestamp-based filename
+    timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+    # Construct the new filename
+    new_filename = f"organization_logos/{timestamp}_{instance.slug}.{ext}"
+    return new_filename
+
+class Organization(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    slug = models.SlugField(max_length=255, unique=True, help_text="Wird für die URL verwendet")
+    contact_email = models.EmailField(blank=True, null=True)
+    contact_phone = models.CharField(max_length=20, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    logo = models.ImageField(
+        upload_to=organization_logo_path, 
+        blank=True, 
+        null=True, 
+        verbose_name="Organisationslogo"
+    )
+    registration_code = models.CharField(max_length=50, unique=True, help_text="Code zum Registrieren von Benutzern")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        verbose_name = "Organisation"
+        verbose_name_plural = "Organisationen"
+
 
 class Client(models.Model):
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name='clients', default='')
     name = models.CharField(max_length=255)
     contact_person = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
@@ -18,7 +60,10 @@ class Client(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.organization.name})"
+
+    class Meta:
+        unique_together = ['organization', 'name']
 
     def get_current_month_revenue(self):
         today = timezone.now()
@@ -183,15 +228,19 @@ class TimeEntry(models.Model):
 class UserProfile(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='profile')
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name='user_profiles', default='')
     is_approved = models.BooleanField(default=False)
     approval_date = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.user.username} - {'Genehmigt' if self.is_approved else 'Ausstehend'}"
+        return f"{self.user.username} ({self.organization.name}) - {'Genehmigt' if self.is_approved else 'Ausstehend'}"
 
     class Meta:
         verbose_name = "Benutzerprofil"
         verbose_name_plural = "Benutzerprofile"
+        unique_together = ['user', 'organization']  # Ein Benutzer kann nur ein Profil pro Organisation haben
+
 
 
 @receiver(post_save, sender=UserProfile)

@@ -1,0 +1,75 @@
+{% extends 'tracking/base.html' %}
+
+{% block title %}Organisation auswählen{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-logo">
+        <i class="bi bi-clock-history"></i>
+        <h2>Zeiterfassung</h2>
+        <p class="text-muted">Beratung & Projektmanagement</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title mb-4 text-center">Organisation auswählen</h5>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <label for="{{ form.organization.id_for_label }}" class="form-label">Organisation</label>
+                    {{ form.organization }}
+                    {% if form.organization.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.organization.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 mt-3">Weiter zur Anmeldung</button>
+            </form>
+        </div>
+        <div class="card-footer text-center">
+            <p class="mb-0">Noch kein Konto? Wähle eine Organisation und <span id="register-link">registriere dich</span>.</p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // JavaScript, um den Registrierungslink dynamisch zu aktualisieren
+    document.addEventListener('DOMContentLoaded', function() {
+        const orgSelect = document.getElementById('{{ form.organization.id_for_label }}');
+        const registerLink = document.getElementById('register-link');
+        
+        function updateRegisterLink() {
+            const selectedOption = orgSelect.options[orgSelect.selectedIndex];
+            const orgSlug = selectedOption ? selectedOption.getAttribute('data-slug') : null;
+            if (orgSlug) {
+                registerLink.innerHTML = `<a href="/${orgSlug}/register/">registriere dich</a>`;
+            } else {
+                registerLink.innerHTML = 'registriere dich (wähle eine Organisation)';
+            }
+        }
+        
+        // Update initial state
+        updateRegisterLink();
+        
+        // Update on change
+        orgSelect.addEventListener('change', updateRegisterLink);
+    });
+</script>
+{% endblock %}

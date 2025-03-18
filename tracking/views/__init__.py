@@ -7,6 +7,7 @@ from tracking.views.analytics import analytics
 from tracking.views.auth import register_view, custom_login_view
 from tracking.views.profile import profile_view, edit_profile, change_password
 from tracking.views.export import export_report
+from tracking.views.organization import switch_organization
 
 # This allows you to import directly from tracking.views
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     'register_view', 'custom_login_view',
     'profile_view', 'edit_profile', 'change_password',
     'export_report',
+    'switch_organization',
 ]

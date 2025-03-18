@@ -3,9 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
-from .models import Client, Project, TimeEntry, UserProfile
-
-# Formulare für die Hauptfunktionalität der App
+from .models import Client, Project, TimeEntry, UserProfile, Organization
 
 
 class ClientForm(forms.ModelForm):
@@ -49,31 +47,124 @@ class TimeEntryForm(forms.ModelForm):
             'is_billable': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-# Formulare für Benutzerregistrierung und -authentifizierung
+
+class CustomAuthenticationForm(forms.Form):
+    """
+    Angepasstes Login-Formular mit freier Organisations-Eingabe
+    """
+    organization_name = forms.CharField(
+        max_length=255,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Organisationsname',
+            'autofocus': True
+        }),
+        label="Organisation"
+    )
+    
+    username = forms.CharField(
+        max_length=254,
+        required=True,
+        widget=forms.TextInput(
+            attrs={'class': 'form-control', 'placeholder': 'Benutzername'}),
+        label="Benutzername"
+    )
+    
+    password = forms.CharField(
+        required=True,
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Passwort'
+        }),
+        label="Passwort"
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        organization_name = cleaned_data.get('organization_name')
+        username = cleaned_data.get('username')
+        password = cleaned_data.get('password')
+
+        if organization_name and username and password:
+            # Versuche, die Organisation zu finden (case-insensitive)
+            try:
+                organization = Organization.objects.get(
+                    name__iexact=organization_name.strip(),
+                    is_active=True
+                )
+            except Organization.DoesNotExist:
+                raise ValidationError(
+                    "Die angegebene Organisation existiert nicht oder ist nicht aktiv."
+                )
+
+            # Suche den Benutzer NUR in dieser Organisation
+            try:
+                user_profile = UserProfile.objects.get(
+                    user__username=username, 
+                    organization=organization
+                )
+                
+                user = user_profile.user
+
+                # Passwort-Überprüfung
+                if not user.check_password(password):
+                    raise ValidationError("Ungültiger Benutzername oder Passwort.")
+                
+                # Prüfe, ob der Benutzer genehmigt ist
+                if not user.is_staff and not user.is_superuser and not user_profile.is_approved:
+                    raise ValidationError(
+                        "Dein Konto wurde noch nicht von einem Administrator freigegeben. "
+                        "Bitte warte auf die Freigabe oder kontaktiere einen Administrator."
+                    )
+
+                # Überprüfen, ob der Benutzer aktiv ist
+                if not user.is_active:
+                    raise ValidationError("Dieses Konto ist deaktiviert.")
+
+                # Speichere die Organisation im Form-Context
+                self.organization = organization
+                self.user = user
+
+            except UserProfile.DoesNotExist:
+                raise ValidationError(
+                    "Benutzer nicht in dieser Organisation gefunden."
+                )
+                
+        return cleaned_data
 
 
 class RegistrationForm(UserCreationForm):
     """
-    Formular für die Benutzerregistrierung mit Codewort-Validierung und
-    zusätzlichen Feldern für E-Mail, Vorname und Nachname.
+    Aktualisiertes Formular für die Benutzerregistrierung mit freier Organisations-Eingabe
     """
-    codewort = forms.CharField(
+    organization_name = forms.CharField(
+        max_length=255,
+        required=True,
+        help_text="Name Ihrer Organisation",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    
+    registration_code = forms.CharField(
         max_length=50,
         required=True,
-        help_text="Bitte gib das Registrierungs-Codewort ein",
+        help_text="Bitte gib den Registrierungs-Code für deine Organisation ein",
         widget=forms.PasswordInput(attrs={'class': 'form-control'})
     )
+    
     email = forms.EmailField(
         max_length=254,
         required=True,
         help_text="Bitte gib eine gültige E-Mail-Adresse ein",
         widget=forms.EmailInput(attrs={'class': 'form-control'})
     )
+    
     first_name = forms.CharField(
         max_length=30,
         required=True,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
+    
     last_name = forms.CharField(
         max_length=30,
         required=True,
@@ -83,7 +174,7 @@ class RegistrationForm(UserCreationForm):
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name', 'last_name',
-                  'password1', 'password2', 'codewort')
+                  'password1', 'password2', 'organization_name', 'registration_code')
 
     def __init__(self, *args, **kwargs):
         super(RegistrationForm, self).__init__(*args, **kwargs)
@@ -91,88 +182,78 @@ class RegistrationForm(UserCreationForm):
         self.fields['password1'].widget.attrs.update({'class': 'form-control'})
         self.fields['password2'].widget.attrs.update({'class': 'form-control'})
 
-    def clean_codewort(self):
-        """Überprüft, ob das richtige Codewort eingegeben wurde."""
-        codewort = self.cleaned_data.get('codewort')
-        if codewort != "Lunatec":
-            raise ValidationError(
-                "Das eingegebene Codewort ist nicht korrekt.")
-        return codewort
-
-    def clean_email(self):
-        """Überprüft, ob die E-Mail-Adresse bereits verwendet wird."""
-        email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise ValidationError(
-                "Diese E-Mail-Adresse wird bereits verwendet.")
-        return email
-
-
-class CustomAuthenticationForm(forms.Form):
-    """
-    Angepasstes Login-Formular, das auch prüft, ob der Benutzer bereits vom
-    Admin genehmigt wurde.
-    """
-    username = forms.CharField(
-        max_length=254,
-        required=True,
-        widget=forms.TextInput(
-            attrs={'class': 'form-control', 'autofocus': True})
-    )
-    password = forms.CharField(
-        required=True,
-        widget=forms.PasswordInput(attrs={'class': 'form-control'})
-    )
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        organization_name = self.cleaned_data.get('organization_name')
+        
+        if organization_name:
+            # Prüfe, ob der Benutzername in DIESER Organisation bereits existiert
+            try:
+                organization = Organization.objects.get(
+                    name__iexact=organization_name.strip(),
+                    is_active=True
+                )
+                
+                # Prüfe nur innerhalb der aktuellen Organisation
+                if UserProfile.objects.filter(
+                    user__username=username, 
+                    organization=organization
+                ).exists():
+                    raise ValidationError(
+                        "Ein Benutzer mit diesem Namen existiert bereits in Ihrer Organisation."
+                    )
+            except Organization.DoesNotExist:
+                pass
+        
+        return username
 
     def clean(self):
         cleaned_data = super().clean()
-        username = cleaned_data.get('username')
-        password = cleaned_data.get('password')
-
-        if username and password:
-            # Überprüfen, ob der Benutzer existiert und das Passwort stimmt
-            user = authenticate(username=username, password=password)
-
-            if user is None:
-                raise ValidationError("Ungültiger Benutzername oder Passwort.")
-
-            # Für Admin-Benutzer kein Profil erforderlich
-            if user.is_staff or user.is_superuser:
-                # Automatisch ein genehmigtes Profil erstellen, falls keines existiert
-                from .models import UserProfile
-                from django.utils import timezone
-
-                UserProfile.objects.get_or_create(
-                    user=user,
-                    defaults={'is_approved': True,
-                              'approval_date': timezone.now()}
-                )
-            else:
-                # Überprüfen, ob der Benutzer vom Admin genehmigt wurde
-                try:
-                    profile = user.profile
-                    if not profile.is_approved:
-                        raise ValidationError(
-                            "Dein Konto wurde noch nicht von einem Administrator freigegeben. "
-                            "Bitte warte auf die Freigabe oder kontaktiere einen Administrator."
-                        )
-                except:
-                    # Erstelle ein nicht genehmigtes Profil für normale Benutzer
-                    from .models import UserProfile
-                    UserProfile.objects.create(user=user, is_approved=False)
-
-                    raise ValidationError(
-                        "Dein Konto wurde noch nicht von einem Administrator freigegeben. "
-                        "Bitte warte auf die Freigabe oder kontaktiere einen Administrator."
-                    )
-
-            # Überprüfen, ob der Benutzer aktiv ist
-            if not user.is_active:
-                raise ValidationError("Dieses Konto ist deaktiviert.")
-
+        organization_name = cleaned_data.get('organization_name')
+        registration_code = cleaned_data.get('registration_code')
+        
+        # Versuche, die Organisation zu finden (case-insensitive)
+        try:
+            organization = Organization.objects.get(
+                name__iexact=organization_name.strip(),
+                is_active=True
+            )
+        except Organization.DoesNotExist:
+            raise ValidationError(
+                "Die angegebene Organisation existiert nicht oder ist nicht aktiv."
+            )
+        
+        # Überprüfe den Registrierungscode
+        if registration_code != organization.registration_code:
+            raise ValidationError(
+                "Der eingegebene Registrierungs-Code ist nicht korrekt."
+            )
+        
         return cleaned_data
 
-# Ergänzung für tracking/forms.py - Formular-Definitionen für Profilfunktionen
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        
+        # Stelle sicher, dass der Benutzer aktiv ist
+        user.is_active = True
+        
+        if commit:
+            user.save()
+            
+            # Organisation finden
+            organization = Organization.objects.get(
+                name__iexact=self.cleaned_data['organization_name'].strip(),
+                is_active=True
+            )
+            
+            # Profil erstellen
+            UserProfile.objects.create(
+                user=user,
+                organization=organization,
+                is_approved=False
+            )
+        
+        return user
 
 
 class ProfileForm(forms.ModelForm):
